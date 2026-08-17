@@ -1,0 +1,1089 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>AI Code Review Assistant</title>
+
+
+    <style>
+
+        * {
+            box-sizing: border-box;
+        }
+
+
+        body {
+
+            margin: 0;
+
+            padding: 40px;
+
+            font-family: Arial, sans-serif;
+
+            background: #0f172a;
+
+            color: white;
+        }
+
+
+        .container {
+
+            max-width: 1100px;
+
+            margin: auto;
+
+            background: #1e293b;
+
+            padding: 35px;
+
+            border-radius: 16px;
+
+            box-shadow:
+                0 10px 30px rgba(0,0,0,0.35);
+        }
+
+
+        h1 {
+
+            text-align: center;
+
+            margin-bottom: 30px;
+
+            font-size: 32px;
+        }
+
+
+        /* -----------------------------
+           Language Selection
+        ----------------------------- */
+
+        .language-section {
+
+            margin-bottom: 20px;
+        }
+
+
+        .language-section label {
+
+            display: block;
+
+            margin-bottom: 8px;
+
+            font-size: 17px;
+
+            font-weight: bold;
+        }
+
+
+        select {
+
+            width: 100%;
+
+            padding: 14px;
+
+            border-radius: 8px;
+
+            border: 1px solid #475569;
+
+            background: #020617;
+
+            color: white;
+
+            font-size: 16px;
+
+            cursor: pointer;
+        }
+
+
+        /* -----------------------------
+           Code Editor
+        ----------------------------- */
+
+        textarea {
+
+            width: 100%;
+
+            height: 350px;
+
+            padding: 18px;
+
+            font-family: Consolas, monospace;
+
+            font-size: 15px;
+
+            line-height: 1.5;
+
+            background: #020617;
+
+            color: #e2e8f0;
+
+            border: 1px solid #475569;
+
+            border-radius: 10px;
+
+            resize: vertical;
+
+            outline: none;
+        }
+
+
+        textarea:focus {
+
+            border-color: #3b82f6;
+        }
+
+
+        /* -----------------------------
+           Review Button
+        ----------------------------- */
+
+        button {
+
+            width: 100%;
+
+            margin-top: 18px;
+
+            padding: 15px;
+
+            background: #2563eb;
+
+            color: white;
+
+            border: none;
+
+            border-radius: 9px;
+
+            font-size: 17px;
+
+            font-weight: bold;
+
+            cursor: pointer;
+
+            transition: 0.2s;
+        }
+
+
+        button:hover {
+
+            background: #1d4ed8;
+        }
+
+
+        button:disabled {
+
+            background: #475569;
+
+            cursor: not-allowed;
+        }
+
+
+        /* -----------------------------
+           Loading
+        ----------------------------- */
+
+        #loading {
+
+            display: none;
+
+            margin-top: 20px;
+
+            padding: 18px;
+
+            background: #172554;
+
+            border-radius: 10px;
+
+            text-align: center;
+
+            font-size: 17px;
+        }
+
+
+        /* -----------------------------
+           Result
+        ----------------------------- */
+
+        #result {
+
+            margin-top: 30px;
+        }
+
+
+        .section {
+
+            margin-top: 25px;
+
+            padding: 25px;
+
+            background: #172033;
+
+            border-radius: 12px;
+
+            border: 1px solid #334155;
+        }
+
+
+        .section h2 {
+
+            margin-top: 0;
+
+            margin-bottom: 20px;
+
+            font-size: 24px;
+        }
+
+
+        /* -----------------------------
+           Analysis Grid
+        ----------------------------- */
+
+        .analysis-grid {
+
+            display: grid;
+
+            grid-template-columns:
+                repeat(2, 1fr);
+
+            gap: 15px;
+        }
+
+
+        .card {
+
+            background: #020617;
+
+            padding: 18px;
+
+            border-radius: 10px;
+
+            border: 1px solid #334155;
+        }
+
+
+        .card-title {
+
+            color: #94a3b8;
+
+            font-size: 14px;
+
+            margin-bottom: 8px;
+        }
+
+
+        .card-value {
+
+            font-size: 20px;
+
+            font-weight: bold;
+
+            color: white;
+        }
+
+
+        /* -----------------------------
+           Code Smells
+        ----------------------------- */
+
+        .smell {
+
+            background: #020617;
+
+            border-left: 5px solid #ef4444;
+
+            padding: 18px;
+
+            margin-bottom: 12px;
+
+            border-radius: 8px;
+        }
+
+
+        .smell-title {
+
+            color: #f87171;
+
+            font-weight: bold;
+
+            margin-bottom: 8px;
+        }
+
+
+        .smell p {
+
+            margin: 5px 0;
+
+            color: #cbd5e1;
+        }
+
+
+        /* -----------------------------
+           AI Review
+        ----------------------------- */
+
+        .ai-review {
+
+            background: #020617;
+
+            padding: 22px;
+
+            border-radius: 10px;
+
+            white-space: pre-wrap;
+
+            line-height: 1.6;
+
+            color: #e2e8f0;
+        }
+
+
+        /* -----------------------------
+           Error
+        ----------------------------- */
+
+        .error {
+
+            background: #450a0a;
+
+            border-left: 5px solid #ef4444;
+
+            padding: 20px;
+
+            border-radius: 8px;
+
+            color: #fecaca;
+        }
+
+
+        /* -----------------------------
+           Responsive
+        ----------------------------- */
+
+        @media (max-width: 700px) {
+
+            body {
+
+                padding: 15px;
+            }
+
+
+            .container {
+
+                padding: 20px;
+            }
+
+
+            .analysis-grid {
+
+                grid-template-columns: 1fr;
+            }
+
+        }
+
+    </style>
+
+</head>
+
+
+<body>
+
+
+<div class="container">
+
+
+    <h1>
+        🤖 AI Code Review Assistant
+    </h1>
+
+
+    <!-- =========================================
+         LANGUAGE SELECTION
+    ========================================== -->
+
+    <div class="language-section">
+
+        <label for="language">
+            Select Programming Language
+        </label>
+
+
+        <select id="language">
+
+            <option value="python">
+                🐍 Python
+            </option>
+
+            <option value="java">
+                ☕ Java
+            </option>
+
+            <option value="c">
+                🔵 C
+            </option>
+
+            <option value="cpp">
+                ⚡ C++
+            </option>
+
+        </select>
+
+    </div>
+
+
+    <!-- =========================================
+         CODE INPUT
+    ========================================== -->
+
+    <textarea
+        id="code"
+        placeholder="Paste your code here..."
+    ></textarea>
+
+
+    <!-- =========================================
+         REVIEW BUTTON
+    ========================================== -->
+
+    <button
+        id="reviewButton"
+        onclick="reviewCode()"
+    >
+
+        🔍 Review Code
+
+    </button>
+
+
+    <!-- =========================================
+         LOADING
+    ========================================== -->
+
+    <div id="loading">
+
+        ⏳ Analyzing your code...
+
+    </div>
+
+
+    <!-- =========================================
+         RESULT
+    ========================================== -->
+
+    <div id="result"></div>
+
+
+</div>
+
+
+<script>
+
+
+// =================================================
+// REVIEW CODE
+// =================================================
+
+async function reviewCode() {
+
+
+    const code =
+        document.getElementById("code").value;
+
+
+    const language =
+        document.getElementById("language").value;
+
+
+    const result =
+        document.getElementById("result");
+
+
+    const loading =
+        document.getElementById("loading");
+
+
+    const reviewButton =
+        document.getElementById("reviewButton");
+
+
+    // ---------------------------------------------
+    // Validate code
+    // ---------------------------------------------
+
+    if (!code.trim()) {
+
+        result.innerHTML = `
+            <div class="error">
+                ⚠️ Please enter some code first.
+            </div>
+        `;
+
+        return;
+    }
+
+
+    // ---------------------------------------------
+    // Loading
+    // ---------------------------------------------
+
+    result.innerHTML = "";
+
+    loading.style.display = "block";
+
+    reviewButton.disabled = true;
+
+    reviewButton.innerText =
+        "⏳ Reviewing...";
+
+
+    try {
+
+
+        // -----------------------------------------
+        // Send request to FastAPI
+        // -----------------------------------------
+
+        const response = await fetch(
+            "http://127.0.0.1:8000/review",
+            {
+
+                method: "POST",
+
+                headers: {
+
+                    "Content-Type":
+                        "application/json"
+
+                },
+
+                body: JSON.stringify({
+
+                    code: code,
+
+                    language: language
+
+                })
+
+            }
+        );
+
+
+        // -----------------------------------------
+        // Read response
+        // -----------------------------------------
+
+        const data =
+            await response.json();
+
+
+        // -----------------------------------------
+        // Backend error
+        // -----------------------------------------
+
+        if (!response.ok) {
+
+            result.innerHTML = `
+                <div class="error">
+
+                    ❌ Error
+
+                    <pre>${escapeHtml(
+                        JSON.stringify(
+                            data,
+                            null,
+                            2
+                        )
+                    )}</pre>
+
+                </div>
+            `;
+
+            return;
+        }
+
+
+        // -----------------------------------------
+        // Display result
+        // -----------------------------------------
+
+        displayResults(data);
+
+
+    }
+
+    catch (error) {
+
+
+        result.innerHTML = `
+
+            <div class="error">
+
+                ❌ Could not connect to backend.
+
+                <br><br>
+
+                Make sure FastAPI is running on:
+
+                <br>
+
+                <strong>
+                    http://127.0.0.1:8000
+                </strong>
+
+                <br><br>
+
+                ${escapeHtml(error.message)}
+
+            </div>
+
+        `;
+
+    }
+
+
+    finally {
+
+
+        loading.style.display = "none";
+
+        reviewButton.disabled = false;
+
+        reviewButton.innerText =
+            "🔍 Review Code";
+
+    }
+
+}
+
+
+
+// =================================================
+// DISPLAY RESULTS
+// =================================================
+
+function displayResults(data) {
+
+
+    const result =
+        document.getElementById("result");
+
+
+    const analysis =
+        data.analysis;
+
+
+    const language =
+        data.language;
+
+
+    const aiReview =
+        data.ai_review || "No AI review available.";
+
+
+    // ---------------------------------------------
+    // Code Smells
+    // ---------------------------------------------
+
+    let smellsHTML = "";
+
+
+    if (
+        analysis.code_smells &&
+        analysis.code_smells.length > 0
+    ) {
+
+
+        analysis.code_smells.forEach(
+            smell => {
+
+                smellsHTML += `
+
+                    <div class="smell">
+
+                        <div class="smell-title">
+
+                            ⚠️ ${escapeHtml(
+                                smell.type
+                            )}
+
+                            -
+                            ${escapeHtml(
+                                smell.severity
+                            )}
+
+                        </div>
+
+
+                        <p>
+
+                            <strong>
+                                Message:
+                            </strong>
+
+                            ${escapeHtml(
+                                smell.message
+                            )}
+
+                        </p>
+
+
+                        <p>
+
+                            <strong>
+                                Suggestion:
+                            </strong>
+
+                            ${escapeHtml(
+                                smell.suggestion
+                            )}
+
+                        </p>
+
+                    </div>
+
+                `;
+
+            }
+        );
+
+    }
+
+    else {
+
+
+        smellsHTML = `
+
+            <div class="smell">
+
+                <div class="smell-title">
+
+                    ✅ No code smells detected
+
+                </div>
+
+
+                <p>
+
+                    Your code passed the
+                    static code-quality checks.
+
+                </p>
+
+            </div>
+
+        `;
+
+    }
+
+
+
+    // ---------------------------------------------
+    // Final HTML
+    // ---------------------------------------------
+
+    result.innerHTML = `
+
+
+        <!-- =====================================
+             LANGUAGE
+        ====================================== -->
+
+        <div class="section">
+
+            <h2>
+                💻 ${escapeHtml(
+                    language.toUpperCase()
+                )} Code Analysis
+            </h2>
+
+
+            <div class="analysis-grid">
+
+
+                <!-- Quality Score -->
+
+                <div class="card">
+
+                    <div class="card-title">
+                        Quality Score
+                    </div>
+
+                    <div class="card-value">
+
+                        ${analysis.quality_score ?? "N/A"}
+
+                    </div>
+
+                </div>
+
+
+                <!-- Time Complexity -->
+
+                <div class="card">
+
+                    <div class="card-title">
+                        Time Complexity
+                    </div>
+
+                    <div class="card-value">
+
+                        ${escapeHtml(
+                            analysis.time_complexity ||
+                            "N/A"
+                        )}
+
+                    </div>
+
+                </div>
+
+
+                <!-- Space Complexity -->
+
+                <div class="card">
+
+                    <div class="card-title">
+                        Space Complexity
+                    </div>
+
+                    <div class="card-value">
+
+                        ${escapeHtml(
+                            analysis.space_complexity ||
+                            "N/A"
+                        )}
+
+                    </div>
+
+                </div>
+
+
+                <!-- Functions -->
+
+                <div class="card">
+
+                    <div class="card-title">
+                        Functions
+                    </div>
+
+                    <div class="card-value">
+
+                        ${analysis.functions ?? 0}
+
+                    </div>
+
+                </div>
+
+
+                <!-- Classes -->
+
+                <div class="card">
+
+                    <div class="card-title">
+                        Classes / Structs
+                    </div>
+
+                    <div class="card-value">
+
+                        ${analysis.classes ?? 0}
+
+                    </div>
+
+                </div>
+
+
+                <!-- Lines -->
+
+                <div class="card">
+
+                    <div class="card-title">
+                        Lines of Code
+                    </div>
+
+                    <div class="card-value">
+
+                        ${analysis.lines ?? 0}
+
+                    </div>
+
+                </div>
+
+
+                <!-- Loops -->
+
+                <div class="card">
+
+                    <div class="card-title">
+                        Loops
+                    </div>
+
+                    <div class="card-value">
+
+                        ${analysis.loops ?? 0}
+
+                    </div>
+
+                </div>
+
+
+                <!-- Loop Depth -->
+
+                <div class="card">
+
+                    <div class="card-title">
+                        Loop Depth
+                    </div>
+
+                    <div class="card-value">
+
+                        ${analysis.loop_depth ?? 0}
+
+                    </div>
+
+                </div>
+
+
+            </div>
+
+        </div>
+
+
+
+        <!-- =====================================
+             STATIC ANALYSIS
+        ====================================== -->
+
+        <div class="section">
+
+            <h2>
+                🔬 Static Analysis
+            </h2>
+
+
+            <div class="analysis-grid">
+
+
+                <div class="card">
+
+                    <div class="card-title">
+                        Syntax
+                    </div>
+
+                    <div class="card-value">
+
+                        ${
+                            analysis.syntax === "Valid"
+                            ? "✅ Valid"
+                            : "❌ Invalid"
+                        }
+
+                    </div>
+
+                </div>
+
+
+                <div class="card">
+
+                    <div class="card-title">
+                        Nested Loops
+                    </div>
+
+                    <div class="card-value">
+
+                        ${
+                            analysis.nested_loops
+                            ? "Yes"
+                            : "No"
+                        }
+
+                    </div>
+
+                </div>
+
+
+            </div>
+
+        </div>
+
+
+
+        <!-- =====================================
+             CODE SMELLS
+        ====================================== -->
+
+        <div class="section">
+
+            <h2>
+                ⚠️ Code Smells
+            </h2>
+
+            ${smellsHTML}
+
+        </div>
+
+
+
+        <!-- =====================================
+             AI REVIEW
+        ====================================== -->
+
+        <div class="section">
+
+            <h2>
+                🧠 AI Review
+            </h2>
+
+
+            <div class="ai-review">
+
+                ${escapeHtml(aiReview)}
+
+            </div>
+
+        </div>
+
+    `;
+
+}
+
+
+
+// =================================================
+// HTML ESCAPE
+// =================================================
+
+function escapeHtml(value) {
+
+
+    if (value === null ||
+        value === undefined) {
+
+        return "";
+
+    }
+
+
+    return String(value)
+
+        .replace(/&/g, "&amp;")
+
+        .replace(/</g, "&lt;")
+
+        .replace(/>/g, "&gt;")
+
+        .replace(/"/g, "&quot;")
+
+        .replace(/'/g, "&#039;");
+
+}
+
+
+</script>
+
+
+</body>
+
+</html>
